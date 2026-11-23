@@ -1,0 +1,9 @@
+# upstream: none Official MySQL library image that Shopware stores its data in, not the Shopware app
+FROM mysql:8.4@sha256:a81d043930e51745522bd5c430961cf8286f0a23f0a9a2a6e0108f7ea71b0902
+
+# MYSQL_ROOT_PASSWORD and MYSQL_PASSWORD are the template variables (generated secrets). The database and user name are baked in.
+# The volume mounts at /var/lib/mysql and the data directory is a sub-folder of it, so the volume's lost+found never lands inside it.
+ENV MYSQL_DATABASE=shopware \
+    MYSQL_USER=shopware
+COPY --chmod=755 db-boot.sh /usr/local/bin/db-boot.sh
+ENTRYPOINT ["/bin/sh", "/usr/local/bin/db-boot.sh"]

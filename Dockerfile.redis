@@ -1,0 +1,5 @@
+# upstream: none Official Redis library image that Shopware uses for sessions and locks, not the Shopware app
+FROM redis:8-alpine@sha256:7958cfbb9d152f87dadfbc89f1b0b15938f0b81ff8982feb327476f4911935c3
+
+COPY --chmod=755 redis-boot.sh /usr/local/bin/redis-boot.sh
+ENTRYPOINT ["/bin/sh", "/usr/local/bin/redis-boot.sh"]

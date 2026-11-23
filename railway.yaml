@@ -1,0 +1,6 @@
+# Private files live on the Railway volume. A symlink at /var/www/html/files makes Shopware's flysystem fail with "mkdir(): File exists".
+shopware:
+  filesystem:
+    private:
+      config:
+        root: /data/files
