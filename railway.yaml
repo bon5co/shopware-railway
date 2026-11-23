@@ -4,3 +4,9 @@ shopware:
     private:
       config:
         root: /data/files
+
+# Neither Shopware nor Symfony reads TRUSTED_PROXIES on its own. Without this the request arrives as http (Railway's edge terminates TLS),
+# no sales-channel domain (https://...) matches it and every storefront page answers 400 "Sales Channel Not Found".
+framework:
+  trusted_proxies: '%env(TRUSTED_PROXIES)%'
+  trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port', 'x-forwarded-prefix']
