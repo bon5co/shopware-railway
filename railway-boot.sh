@@ -15,7 +15,6 @@ log() { echo "[shopware-boot] $*"; }
 : "${REDIS_PASSWORD:?REDIS_PASSWORD is not set}"
 : "${APP_SECRET:?APP_SECRET is not set}"
 : "${INSTANCE_ID:?INSTANCE_ID is not set}"
-: "${APP_URL:?APP_URL is not set}"
 : "${INSTALL_ADMIN_PASSWORD:?INSTALL_ADMIN_PASSWORD is not set}"
 
 DB_HOST="${DB_HOST:-database.railway.internal}"
@@ -27,6 +26,14 @@ export DATABASE_URL="mysql://shopware:${MYSQL_PASSWORD}@${DB_HOST}:3306/shopware
 export LOCK_DSN="redis://:${REDIS_PASSWORD}@${REDIS_HOST}:6379/1"
 export PHP_SESSION_HANDLER=redis
 export PHP_SESSION_SAVE_PATH="tcp://${REDIS_HOST}:6379?auth=${REDIS_PASSWORD}"
+
+# APP_URL becomes the storefront's sales-channel domain at first install and never changes after, so it must be right the first time.
+# The generate project creates the public domain after the service, so the first deployment can see an empty host: fail fast, the next one has it.
+APP_URL="${APP_URL:-}"
+case "$APP_URL" in
+  https://|http://|"") if [ -n "${RAILWAY_PUBLIC_DOMAIN:-}" ]; then APP_URL="https://$RAILWAY_PUBLIC_DOMAIN"; else log "APP_URL has no host yet, exiting so Railway retries with the domain"; exit 1; fi ;;
+esac
+export APP_URL
 
 # --- persistent state on the one volume ---------------------------------------------------------------------------------------
 mkdir -p "$DATA/files" "$DATA/public"
@@ -64,5 +71,6 @@ NGINX
 
 # --- wait for MySQL, then hand over to supervisord (each program drops to www-data itself) ----------------------------------------------------------------
 until nc -z -w 3 "$DB_HOST" 3306 >/dev/null 2>&1; do log "waiting for $DB_HOST:3306"; sleep 3; done
-log "database reachable, starting"
+until nc -z -w 3 "$REDIS_HOST" 6379 >/dev/null 2>&1; do log "waiting for $REDIS_HOST:6379"; sleep 3; done
+log "database and redis reachable, starting"
 exec /usr/bin/supervisord -c /etc/supervisord.railway.conf
